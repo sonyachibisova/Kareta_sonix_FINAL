@@ -159,17 +159,16 @@ public class ConnectedClient {
                     .filter(c -> c.name != null && c.name.equalsIgnoreCase(targetName))
                     .findFirst();
             if (target.isPresent()) {
+                // Новый формат: отправитель:получатель:текст
+                String payload = name + ":" + targetName + ":" + data;
                 target.get().sendData(MessageType.PRIVATE
                         + ProtocolConstants.COMMAND_SEPARATOR
-                        + name
-                        + ProtocolConstants.AUTHOR_SEPARATOR
-                        + data);
+                        + payload);
+                // Копия себе только если не самому себе (избегаем дубля)
                 if (!target.get().name.equalsIgnoreCase(name)) {
                     sendData(MessageType.PRIVATE
                             + ProtocolConstants.COMMAND_SEPARATOR
-                            + name
-                            + ProtocolConstants.AUTHOR_SEPARATOR
-                            + data);
+                            + payload);
                 }
                 if (currentUser != null && target.get().currentUser != null) {
                     messageService.save(currentUser, target.get().currentUser, data);

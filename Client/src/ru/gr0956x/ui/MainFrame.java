@@ -27,6 +27,7 @@ public class MainFrame extends JFrame implements Ui {
     private JButton privateButton;
     private final List<String> allMessages = new ArrayList<>();
     private JTextField searchField;
+    private String myNick = null;
 
     public MainFrame() {
         setTitle("Карета");
@@ -129,9 +130,17 @@ public class MainFrame extends JFrame implements Ui {
     public void showInfo(String data, MessageType type) {
         SwingUtilities.invokeLater(() -> {
             if (type == MessageType.MESSAGE || type == MessageType.PRIVATE) {
-                var parts = data.split(":", 2);
-                if (parts.length == 2) {
-                    allMessages.add(type + ":" + parts[0] + ":" + parts[1]);
+                if (type == MessageType.MESSAGE) {
+                    var parts = data.split(":", 2);
+                    if (parts.length == 2) {
+                        allMessages.add(type + ":" + parts[0] + ":" + parts[1]);
+                    }
+                } else { // PRIVATE
+                    var parts = data.split(":", 3);
+                    if (parts.length == 3) {
+                        // Формат: PRIVATE:sender:receiver:text
+                        allMessages.add(type + ":" + parts[0] + ":" + parts[1] + ":" + parts[2]);
+                    }
                 }
                 if ((selectedPrivateNick == null && type == MessageType.MESSAGE) ||
                         (selectedPrivateNick != null && type == MessageType.PRIVATE)) {
@@ -152,7 +161,16 @@ public class MainFrame extends JFrame implements Ui {
                 if (parts.length == 2) {
                     chatArea.append("[История] " + parts[0] + ": " + parts[1] + "\n");
                 }
-            } else {
+            } else if (type == MessageType.INFO) {
+            // "Пользователь X вошел в чат"
+            if (data.startsWith("Пользователь ") && data.endsWith(" вошел в чат")) {
+                String nick = data.substring(12, data.length() - 12).trim();
+                if (myNick == null && !nick.isBlank()) {
+                    myNick = nick;
+                }
+            }
+            chatArea.append(data + "\n");
+        } else {
                 chatArea.append(data + "\n");
             }
         });
@@ -171,17 +189,37 @@ public class MainFrame extends JFrame implements Ui {
     private void refreshChat() {
         chatArea.setText("");
         for (var msg : allMessages) {
-            var parts = msg.split(":", 3);
-            var msgType = parts[0];
-            var sender = parts[1];
-            var text = parts[2];
-            if (selectedPrivateNick == null) {
-                if (msgType.equals("MESSAGE")) {
-                    chatArea.append(sender + ": " + text + "\n");
+            var typeAndRest = msg.split(":", 2);
+            var msgType = typeAndRest[0];
+            var rest = typeAndRest[1];
+
+            if (msgType.equals("MESSAGE")) {
+                if (selectedPrivateNick == null) {
+                    var parts = rest.split(":", 2);
+                    if (parts.length == 2) {
+                        chatArea.append(parts[0] + ": " + parts[1] + "\n");
+                    }
                 }
-            } else {
-                if (msgType.equals("PRIVATE")) {
-                    chatArea.append(sender + ": " + text + "\n");
+            } else if (msgType.equals("PRIVATE")) {
+                if (selectedPrivateNick != null) {
+                    var parts = rest.split(":", 3);
+                    if (parts.length == 3) {
+                        var sender = parts[0];
+                        var receiver = parts[1];
+                        var text = parts[2];
+                        boolean show = false;
+                        // Если выбран свой ник – показываем только сообщения самой себе
+                        if (myNick != null && selectedPrivateNick.equals(myNick)) {
+                            show = sender.equalsIgnoreCase(myNick) && receiver.equalsIgnoreCase(myNick);
+                        } else {
+                            // Обычный личный чат с другим пользователем
+                            show = sender.equalsIgnoreCase(selectedPrivateNick) ||
+                                    receiver.equalsIgnoreCase(selectedPrivateNick);
+                        }
+                        if (show) {
+                            chatArea.append(sender + ": " + text + "\n");
+                        }
+                    }
                 }
             }
         }
