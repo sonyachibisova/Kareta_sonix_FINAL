@@ -114,7 +114,6 @@ public class MainFrame extends JFrame implements Ui {
     private void sendMessage() {
         var text = inputField.getText().trim();
         if (!text.isEmpty()) {
-            chatArea.append("Я: " + text + "\n");
             var msg = text;
             if (selectedPrivateNick != null) {
                 msg = "@" + selectedPrivateNick + " " + text;
@@ -134,7 +133,10 @@ public class MainFrame extends JFrame implements Ui {
                 if (parts.length == 2) {
                     allMessages.add(type + ":" + parts[0] + ":" + parts[1]);
                 }
-                refreshChat();
+                if ((selectedPrivateNick == null && type == MessageType.MESSAGE) ||
+                        (selectedPrivateNick != null && type == MessageType.PRIVATE)) {
+                    refreshChat();
+                }
             } else if (type == MessageType.ONLINE) {
                 onlineModel.clear();
                 for (var nick : data.split(",")) {
@@ -176,8 +178,6 @@ public class MainFrame extends JFrame implements Ui {
             if (selectedPrivateNick == null) {
                 if (msgType.equals("MESSAGE")) {
                     chatArea.append(sender + ": " + text + "\n");
-                } else if (msgType.equals("PRIVATE")) {
-                    chatArea.append("[ЛС] " + sender + ": " + text + "\n");
                 }
             } else {
                 if (msgType.equals("PRIVATE")) {

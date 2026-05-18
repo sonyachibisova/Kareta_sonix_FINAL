@@ -26,9 +26,9 @@ public class MessageService {
     public List<Message> getChatHistory(User user1, User user2) {
         var messages = messageRepository.findBySenderOrReceiverOrderBySentAtDesc(user1, user2);
         messages.forEach(m -> {
-            m.getSender().getNick();
+            m.getSender().getNick(); // инициализация LAZY в транзакции
             if (m.getReceiver() != null) {
-                m.getReceiver().getNick();
+                m.getReceiver().getNick(); //инициализация LAZY в транзакции
             }
         });
         return messages;
