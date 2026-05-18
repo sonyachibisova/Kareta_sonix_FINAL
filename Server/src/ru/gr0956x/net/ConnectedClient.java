@@ -164,11 +164,13 @@ public class ConnectedClient {
                         + name
                         + ProtocolConstants.AUTHOR_SEPARATOR
                         + data);
-                sendData(MessageType.PRIVATE
-                        + ProtocolConstants.COMMAND_SEPARATOR
-                        + name
-                        + ProtocolConstants.AUTHOR_SEPARATOR
-                        + data);
+                if (!target.get().name.equalsIgnoreCase(name)) {
+                    sendData(MessageType.PRIVATE
+                            + ProtocolConstants.COMMAND_SEPARATOR
+                            + name
+                            + ProtocolConstants.AUTHOR_SEPARATOR
+                            + data);
+                }
                 if (currentUser != null && target.get().currentUser != null) {
                     messageService.save(currentUser, target.get().currentUser, data);
                 }
