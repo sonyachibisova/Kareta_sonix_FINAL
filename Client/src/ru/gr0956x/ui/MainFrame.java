@@ -47,12 +47,11 @@ public class MainFrame extends JFrame implements Ui {
             if (nick != null && !e.getValueIsAdjusting()) {
                 selectedPrivateNick = nick;
                 privateButton.setText("Личные: " + nick);
-                publicButton.setEnabled(true);
-                privateButton.setEnabled(false);
                 refreshChat();
             }
         });
         JScrollPane onlineScroll = new JScrollPane(onlineList);
+        onlineScroll.setPreferredSize(new Dimension(150, 0));
 
         inputField = new JTextField();
         sendButton = new JButton("Отправить");
@@ -83,7 +82,7 @@ public class MainFrame extends JFrame implements Ui {
 
         publicButton = new JButton("Общий чат");
         privateButton = new JButton("Личные");
-        publicButton.setEnabled(false);
+        
 
         JPanel filterPanel = new JPanel(new GridLayout(1, 2));
         filterPanel.add(publicButton);
@@ -96,13 +95,14 @@ public class MainFrame extends JFrame implements Ui {
 
         publicButton.addActionListener(e -> {
             selectedPrivateNick = null;
-            publicButton.setEnabled(false);
-            privateButton.setEnabled(true);
             refreshChat();
         });
 
         privateButton.addActionListener(e -> {
-            if (selectedPrivateNick != null) {
+            var selected = onlineList.getSelectedValue();
+            if (selected != null) {
+                selectedPrivateNick = selected;
+                privateButton.setText("Личные: " + selected);
                 refreshChat();
             }
         });
@@ -188,34 +188,70 @@ public class MainFrame extends JFrame implements Ui {
 
     private void refreshChat() {
         chatArea.setText("");
+
         for (var msg : allMessages) {
             var typeAndRest = msg.split(":", 2);
+
+            if (typeAndRest.length < 2) {
+                continue;
+            }
+
             var msgType = typeAndRest[0];
             var rest = typeAndRest[1];
 
+            // ===== ОБЩИЙ ЧАТ =====
             if (msgType.equals("MESSAGE")) {
+
                 if (selectedPrivateNick == null) {
+
                     var parts = rest.split(":", 2);
+
                     if (parts.length == 2) {
-                        chatArea.append(parts[0] + ": " + parts[1] + "\n");
+                        var sender = parts[0];
+                        var text = parts[1];
+
+                        chatArea.append(sender + ": " + text + "\n");
                     }
                 }
-            } else if (msgType.equals("PRIVATE")) {
+            }
+
+            // ===== ЛИЧНЫЕ СООБЩЕНИЯ =====
+            else if (msgType.equals("PRIVATE")) {
+
                 if (selectedPrivateNick != null) {
+
                     var parts = rest.split(":", 3);
+
                     if (parts.length == 3) {
+
                         var sender = parts[0];
                         var receiver = parts[1];
                         var text = parts[2];
+
                         boolean show = false;
-                        // Если выбран свой ник – показываем только сообщения самой себе
-                        if (myNick != null && selectedPrivateNick.equals(myNick)) {
-                            show = sender.equalsIgnoreCase(myNick) && receiver.equalsIgnoreCase(myNick);
-                        } else {
-                            // Обычный личный чат с другим пользователем
-                            show = sender.equalsIgnoreCase(selectedPrivateNick) ||
+
+                        // показываем ТОЛЬКО сообщения
+                        // между мной и выбранным пользователем
+
+                        if (myNick != null) {
+
+                            boolean iAmSender =
+                                    sender.equalsIgnoreCase(myNick);
+
+                            boolean iAmReceiver =
+                                    receiver.equalsIgnoreCase(myNick);
+
+                            boolean selectedIsSender =
+                                    sender.equalsIgnoreCase(selectedPrivateNick);
+
+                            boolean selectedIsReceiver =
                                     receiver.equalsIgnoreCase(selectedPrivateNick);
+
+                            show =
+                                    (iAmSender && selectedIsReceiver) ||
+                                            (iAmReceiver && selectedIsSender);
                         }
+
                         if (show) {
                             chatArea.append(sender + ": " + text + "\n");
                         }
